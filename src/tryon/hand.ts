@@ -27,20 +27,20 @@ const RADIUS_RATIO: Record<FingerId, number> = {
 
 /** How far MCP → PIP the ring sits. MediaPipe MCP is in the knuckle/palm crease. */
 const ALONG_PIP: Record<FingerId, number> = {
-  thumb: 0.62,
-  index: 0.74,
-  middle: 0.74,
-  ring: 0.76,
-  pinky: 0.74,
+  thumb: 0.52,
+  index: 0.62,
+  middle: 0.62,
+  ring: 0.63,
+  pinky: 0.62,
 };
 
-/** Fallback along MCP → fingertip when PIP is too close to the knuckle. */
+/** Floor along MCP → fingertip so a collapsed PIP cannot pull the ring into the palm. */
 const ALONG_TIP: Record<FingerId, number> = {
-  thumb: 0.3,
-  index: 0.34,
-  middle: 0.34,
-  ring: 0.36,
-  pinky: 0.34,
+  thumb: 0.24,
+  index: 0.27,
+  middle: 0.27,
+  ring: 0.28,
+  pinky: 0.27,
 };
 
 const dist = (a: Point3, b: Point3): number =>
@@ -120,9 +120,9 @@ export const estimateRingPose = (
   if (!dir) return null;
 
   const tPip = clamp(
-    ALONG_PIP[finger] + Math.min(0.04, widthMm * 0.004),
-    finger === 'thumb' ? 0.52 : 0.66,
-    finger === 'thumb' ? 0.78 : 0.88,
+    ALONG_PIP[finger] + Math.min(0.03, widthMm * 0.003),
+    finger === 'thumb' ? 0.42 : 0.52,
+    finger === 'thumb' ? 0.66 : 0.72,
   );
   const fromPip = {
     x: mcpLm.x + (pipLm.x - mcpLm.x) * tPip,
@@ -142,7 +142,8 @@ export const estimateRingPose = (
     const dy = a.y - b.y;
     return dx * dx + dy * dy;
   };
-  const alongLm = dist2(fromTip, wristLm) > dist2(fromPip, wristLm) ? fromTip : fromPip;
+  const alongLm =
+    dist2(fromPip, wristLm) >= dist2(fromTip, wristLm) ? fromPip : fromTip;
   const surface = toPx(alongLm, width, height);
 
   let radiusPx = dirLen * RADIUS_RATIO[finger];
