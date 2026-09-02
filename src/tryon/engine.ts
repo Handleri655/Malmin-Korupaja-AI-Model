@@ -9,11 +9,11 @@ import {
 import { applyRingFinish, createRingMaterials } from './materials.ts';
 import { createRingTextures } from './textures.ts';
 
-const UP = new THREE.Vector3(0, 1, 0);
 const TARGET_POS = new THREE.Vector3();
 const TARGET_DIR = new THREE.Vector3();
 const TARGET_QUAT = new THREE.Quaternion();
 const TMP_SCALE = new THREE.Vector3();
+const UP = new THREE.Vector3(0, 1, 0);
 
 export class TryOnEngine {
   readonly renderer: THREE.WebGLRenderer;
@@ -76,10 +76,14 @@ export class TryOnEngine {
     const occluderMat = new THREE.MeshBasicMaterial();
     occluderMat.colorWrite = false;
     occluderMat.depthWrite = true;
+    occluderMat.polygonOffset = true;
+    occluderMat.polygonOffsetFactor = 1;
+    occluderMat.polygonOffsetUnits = 1;
     this.occluder = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.96, 0.9, 7.5, 28),
+      new THREE.CylinderGeometry(0.74, 0.84, 5.2, 32),
       occluderMat,
     );
+    this.occluder.scale.set(1, 1, 1);
     this.occluder.renderOrder = 0;
     this.occluder.frustumCulled = false;
 
@@ -136,6 +140,7 @@ export class TryOnEngine {
         this.finger,
         this.sourceWidth,
         this.sourceHeight,
+        this.widthMm,
       );
 
     if (!pose) {
@@ -152,7 +157,7 @@ export class TryOnEngine {
     TARGET_POS.set(pose.x, pose.y, pose.z);
     TARGET_DIR.set(pose.dirX, pose.dirY, pose.dirZ).normalize();
     TARGET_QUAT.setFromUnitVectors(UP, TARGET_DIR);
-    const scale = pose.radiusPx * this.sizeAdjust;
+    const scale = pose.radiusPx * 1.04 * this.sizeAdjust;
 
     if (!this.hasPose) {
       this.group.position.copy(TARGET_POS);
@@ -160,10 +165,10 @@ export class TryOnEngine {
       this.group.scale.setScalar(scale);
       this.hasPose = true;
     } else {
-      this.group.position.lerp(TARGET_POS, 0.42);
-      this.group.quaternion.slerp(TARGET_QUAT, 0.38);
+      this.group.position.lerp(TARGET_POS, 0.36);
+      this.group.quaternion.slerp(TARGET_QUAT, 0.3);
       TMP_SCALE.set(scale, scale, scale);
-      this.group.scale.lerp(TMP_SCALE, 0.32);
+      this.group.scale.lerp(TMP_SCALE, 0.2);
     }
 
     this.opacity = Math.min(1, this.opacity + 0.22);

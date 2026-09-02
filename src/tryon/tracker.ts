@@ -20,9 +20,9 @@ export class HandTracker {
       },
       runningMode: 'VIDEO' as const,
       numHands: 1,
-      minHandDetectionConfidence: 0.55,
-      minHandPresenceConfidence: 0.55,
-      minTrackingConfidence: 0.5,
+      minHandDetectionConfidence: 0.4,
+      minHandPresenceConfidence: 0.4,
+      minTrackingConfidence: 0.4,
     };
 
     try {
@@ -43,17 +43,28 @@ export class HandTracker {
     this.lastTs = 0;
   }
 
-  detectVideo(video: HTMLVideoElement): HandLandmarkerResult | null {
-    if (!this.landmarker || video.readyState < 2) return null;
+  detectVideo(
+    frame: HTMLVideoElement | HTMLCanvasElement | HTMLImageElement,
+  ): HandLandmarkerResult | null {
+    if (!this.landmarker) return null;
+    if (frame instanceof HTMLVideoElement && frame.readyState < 2) return null;
     let ts = performance.now();
     if (ts <= this.lastTs) ts = this.lastTs + 1;
     this.lastTs = ts;
-    return this.landmarker.detectForVideo(video, ts);
+    try {
+      return this.landmarker.detectForVideo(frame, ts);
+    } catch {
+      return null;
+    }
   }
 
   detectImage(image: HTMLImageElement | HTMLCanvasElement): HandLandmarkerResult | null {
     if (!this.landmarker) return null;
-    return this.landmarker.detect(image);
+    try {
+      return this.landmarker.detect(image);
+    } catch {
+      return null;
+    }
   }
 
   close(): void {

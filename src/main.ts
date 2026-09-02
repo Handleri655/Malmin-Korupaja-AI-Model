@@ -55,6 +55,7 @@ let tracker: HandTracker | null = null;
 let raf = 0;
 let lastOverlayW = 0;
 let lastOverlayH = 0;
+let stillFrame: HTMLCanvasElement | null = null;
 let stillLandmarks: Array<{ x: number; y: number; z: number }> | null = null;
 let stillWorld: Array<{ x: number; y: number; z: number }> | null = null;
 let recording = false;
@@ -153,8 +154,11 @@ const loop = (): void => {
   if (source === 'camera') {
     const result = tracker.detectVideo(camera);
     found = engine.update(result?.landmarks[0], result?.worldLandmarks[0]);
-  } else if (stillLandmarks) {
-    found = engine.update(stillLandmarks, stillWorld ?? undefined);
+  } else if (stillFrame) {
+    const live = tracker.detectVideo(stillFrame);
+    const landmarks = live?.landmarks[0] ?? stillLandmarks;
+    const world = live?.worldLandmarks[0] ?? stillWorld ?? undefined;
+    found = engine.update(landmarks ?? undefined, world);
   } else {
     engine.renderIdle();
   }
@@ -180,12 +184,16 @@ const loop = (): void => {
 const ensureEngine = async (): Promise<void> => {
   if (engine && tracker) return;
   loader.hidden = false;
-  engine = new TryOnEngine(overlay);
-  engine.setRing(ring);
-  engine.setWidth(widthMm);
-  engine.setFinger(finger);
-  tracker = new HandTracker();
-  await tracker.init();
+  if (!engine) {
+    engine = new TryOnEngine(overlay);
+    engine.setRing(ring);
+    engine.setWidth(widthMm);
+    engine.setFinger(finger);
+  }
+  if (!tracker) {
+    tracker = new HandTracker();
+    await tracker.init();
+  }
   loader.hidden = true;
 };
 
@@ -200,7 +208,9 @@ const openLive = async (): Promise<void> => {
   source = 'camera';
   still.hidden = true;
   camera.hidden = false;
+  stillFrame = null;
   stillLandmarks = null;
+  stillWorld = null;
   gate.hidden = true;
   loader.hidden = false;
   await startCamera(camera, facing);
@@ -209,6 +219,18 @@ const openLive = async (): Promise<void> => {
   await tracker?.setMode('VIDEO');
   loader.hidden = true;
   beginLoop();
+};
+
+const prepareStillFrame = (image: HTMLImageElement): HTMLCanvasElement => {
+  const maxSide = 960;
+  const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(2, Math.round(image.naturalWidth * scale));
+  canvas.height = Math.max(2, Math.round(image.naturalHeight * scale));
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Kuva-alustaa ei saatu');
+  ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+  return canvas;
 };
 
 const openStillUrl = async (url: string): Promise<void> => {
@@ -222,10 +244,16 @@ const openStillUrl = async (url: string): Promise<void> => {
   await still.decode();
   lastOverlayW = 0;
   syncViewport();
+  stillFrame = prepareStillFrame(still);
   await tracker?.setMode('IMAGE');
-  const result = tracker?.detectImage(still);
+  let result = tracker?.detectImage(stillFrame) ?? null;
+  for (let i = 0; i < 6 && !result?.landmarks[0]; i += 1) {
+    await new Promise((resolve) => window.setTimeout(resolve, 80));
+    result = tracker?.detectImage(stillFrame) ?? null;
+  }
   stillLandmarks = result?.landmarks[0] ?? null;
   stillWorld = result?.worldLandmarks[0] ?? null;
+  await tracker?.setMode('VIDEO');
   gate.hidden = true;
   beginLoop();
 };
