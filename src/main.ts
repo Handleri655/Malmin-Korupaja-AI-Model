@@ -55,6 +55,8 @@ let tracker: HandTracker | null = null;
 let raf = 0;
 let lastOverlayW = 0;
 let lastOverlayH = 0;
+let lastBoxW = 0;
+let lastBoxH = 0;
 let stillFrame: HTMLCanvasElement | null = null;
 let stillLandmarks: Array<{ x: number; y: number; z: number }> | null = null;
 let stillWorld: Array<{ x: number; y: number; z: number }> | null = null;
@@ -133,16 +135,59 @@ const applyRing = (next: RingProduct): void => {
 const sourceElement = (): HTMLVideoElement | HTMLImageElement =>
   source === 'camera' ? camera : still;
 
+const layoutCover = (
+  target: HTMLElement,
+  srcW: number,
+  srcH: number,
+  boxW: number,
+  boxH: number,
+): void => {
+  const srcAspect = srcW / srcH;
+  const boxAspect = boxW / boxH;
+  let drawW: number;
+  let drawH: number;
+  let left: number;
+  let top: number;
+  if (srcAspect > boxAspect) {
+    drawH = boxH;
+    drawW = drawH * srcAspect;
+    left = (boxW - drawW) / 2;
+    top = 0;
+  } else {
+    drawW = boxW;
+    drawH = drawW / srcAspect;
+    left = 0;
+    top = (boxH - drawH) / 2;
+  }
+  target.style.inset = 'auto';
+  target.style.width = `${drawW}px`;
+  target.style.height = `${drawH}px`;
+  target.style.left = `${left}px`;
+  target.style.top = `${top}px`;
+};
+
 const syncViewport = (): void => {
   if (!engine) return;
   const el = sourceElement();
   const width = el instanceof HTMLVideoElement ? el.videoWidth : el.naturalWidth;
   const height = el instanceof HTMLVideoElement ? el.videoHeight : el.naturalHeight;
   if (width < 2 || height < 2) return;
-  if (width === lastOverlayW && height === lastOverlayH) return;
+  const boxW = stage.clientWidth;
+  const boxH = stage.clientHeight;
+  if (
+    width === lastOverlayW &&
+    height === lastOverlayH &&
+    boxW === lastBoxW &&
+    boxH === lastBoxH
+  ) {
+    return;
+  }
   lastOverlayW = width;
   lastOverlayH = height;
+  lastBoxW = boxW;
+  lastBoxH = boxH;
   engine.resize(width, height);
+  layoutCover(overlay, width, height, boxW, boxH);
 };
 
 const loop = (): void => {
@@ -469,6 +514,12 @@ $('save-media').addEventListener('click', () => {
 $('close-preview').addEventListener('click', () => {
   preview.hidden = true;
   previewVideo.pause();
+});
+
+window.addEventListener('resize', () => {
+  lastBoxW = 0;
+  lastBoxH = 0;
+  syncViewport();
 });
 
 document.addEventListener('visibilitychange', () => {

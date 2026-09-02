@@ -195,13 +195,13 @@ export const FINGERS: { id: FingerId; label: string; short: string }[] = [
 
 export const FINGER_JOINTS: Record<
   FingerId,
-  { mcp: number; pip: number; adjacent: number[] }
+  { mcp: number; pip: number; tip: number; adjacent: number[] }
 > = {
-  thumb: { mcp: 2, pip: 3, adjacent: [5] },
-  index: { mcp: 5, pip: 6, adjacent: [9] },
-  middle: { mcp: 9, pip: 10, adjacent: [5, 13] },
-  ring: { mcp: 13, pip: 14, adjacent: [9, 17] },
-  pinky: { mcp: 17, pip: 18, adjacent: [13] },
+  thumb: { mcp: 2, pip: 3, tip: 4, adjacent: [5] },
+  index: { mcp: 5, pip: 6, tip: 8, adjacent: [9] },
+  middle: { mcp: 9, pip: 10, tip: 12, adjacent: [5, 13] },
+  ring: { mcp: 13, pip: 14, tip: 16, adjacent: [9, 17] },
+  pinky: { mcp: 17, pip: 18, tip: 20, adjacent: [13] },
 };
 
 export const formatPrice = (value: number): string =>

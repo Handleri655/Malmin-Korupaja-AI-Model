@@ -25,12 +25,22 @@ const RADIUS_RATIO: Record<FingerId, number> = {
   pinky: 0.168,
 };
 
-const ALONG: Record<FingerId, number> = {
+/** How far MCP → PIP the ring sits. MediaPipe MCP is in the knuckle/palm crease. */
+const ALONG_PIP: Record<FingerId, number> = {
+  thumb: 0.62,
+  index: 0.74,
+  middle: 0.74,
+  ring: 0.76,
+  pinky: 0.74,
+};
+
+/** Fallback along MCP → fingertip when PIP is too close to the knuckle. */
+const ALONG_TIP: Record<FingerId, number> = {
   thumb: 0.3,
-  index: 0.18,
-  middle: 0.17,
-  ring: 0.18,
-  pinky: 0.2,
+  index: 0.34,
+  middle: 0.34,
+  ring: 0.36,
+  pinky: 0.34,
 };
 
 const dist = (a: Point3, b: Point3): number =>
@@ -42,19 +52,11 @@ const sub = (a: Point3, b: Point3): Point3 => ({
   z: a.z - b.z,
 });
 
-const addScaled = (a: Point3, b: Point3, s: number): Point3 => ({
-  x: a.x + b.x * s,
-  y: a.y + b.y * s,
-  z: a.z + b.z * s,
-});
-
 const scale = (a: Point3, s: number): Point3 => ({
   x: a.x * s,
   y: a.y * s,
   z: a.z * s,
 });
-
-const dot = (a: Point3, b: Point3): number => a.x * b.x + a.y * b.y + a.z * b.z;
 
 const cross = (a: Point3, b: Point3): Point3 => ({
   x: a.y * b.z - a.z * b.y,
@@ -92,14 +94,17 @@ export const estimateRingPose = (
   const joints = FINGER_JOINTS[finger];
   const mcpLm = landmarks[joints.mcp];
   const pipLm = landmarks[joints.pip];
+  const tipLm = landmarks[joints.tip];
   const wristLm = landmarks[0];
   if (!mcpLm || !pipLm || !wristLm) return null;
 
   const mcp = toPx(mcpLm, width, height);
   const pip = toPx(pipLm, width, height);
+  const tip = tipLm ? toPx(tipLm, width, height) : null;
   const axis = sub(pip, mcp);
   const dirLen = len(axis);
   if (dirLen < 8) return null;
+  const longAxis = tip && len(sub(tip, mcp)) > dirLen ? sub(tip, mcp) : axis;
 
   let pxPerMm = dirLen / 42;
   const worldMcp = worldLandmarks?.[joints.mcp];
@@ -109,21 +114,36 @@ export const estimateRingPose = (
     if (worldLen > 1e-4) pxPerMm = dirLen / worldLen / 1000;
   }
 
-  const rawDir = normalize(axis);
+  const rawDir = normalize(longAxis);
   if (!rawDir) return null;
   const dir = normalize({ x: rawDir.x, y: rawDir.y, z: rawDir.z * 0.4 });
   if (!dir) return null;
 
-  const phalanxMm = dirLen / Math.max(pxPerMm, 0.35);
-  const alongBase = ALONG[finger];
-  const alongTarget = (3.8 + widthMm * 0.48) / Math.max(phalanxMm, 8);
-  const t = clamp(
-    lerp(alongBase, alongTarget, 0.65),
-    finger === 'thumb' ? 0.22 : 0.14,
-    finger === 'thumb' ? 0.4 : 0.28,
+  const tPip = clamp(
+    ALONG_PIP[finger] + Math.min(0.04, widthMm * 0.004),
+    finger === 'thumb' ? 0.52 : 0.66,
+    finger === 'thumb' ? 0.78 : 0.88,
   );
-
-  const surface = addScaled(mcp, dir, dirLen * t);
+  const fromPip = {
+    x: mcpLm.x + (pipLm.x - mcpLm.x) * tPip,
+    y: mcpLm.y + (pipLm.y - mcpLm.y) * tPip,
+    z: mcpLm.z + (pipLm.z - mcpLm.z) * tPip,
+  };
+  const tTip = ALONG_TIP[finger];
+  const fromTip = tipLm
+    ? {
+        x: mcpLm.x + (tipLm.x - mcpLm.x) * tTip,
+        y: mcpLm.y + (tipLm.y - mcpLm.y) * tTip,
+        z: mcpLm.z + (tipLm.z - mcpLm.z) * tTip,
+      }
+    : fromPip;
+  const dist2 = (a: Point3, b: Point3): number => {
+    const dx = a.x - b.x;
+    const dy = a.y - b.y;
+    return dx * dx + dy * dy;
+  };
+  const alongLm = dist2(fromTip, wristLm) > dist2(fromPip, wristLm) ? fromTip : fromPip;
+  const surface = toPx(alongLm, width, height);
 
   let radiusPx = dirLen * RADIUS_RATIO[finger];
   let spacingSum = 0;
@@ -163,16 +183,12 @@ export const estimateRingPose = (
     }
   }
 
-  const cam: Point3 = { x: 0, y: 0, z: 1 };
-  const radial = addScaled(cam, dir, -dot(cam, dir));
-  const radialU = normalize(radial);
-  const alongView = Math.abs(dir.z);
-  const insetK = lerp(0.12, 0.78, clamp((palmFacing - 0.12) / 0.7, 0, 1));
-  const inset = radialU && alongView < 0.92 ? radiusPx * insetK : radiusPx * 0.12;
-  const center = radialU ? addScaled(surface, radialU, -inset) : surface;
+  const insetK = lerp(0.12, 0.7, clamp((palmFacing - 0.12) / 0.7, 0, 1));
+  const inset = radiusPx * insetK;
+  const center = { x: surface.x, y: surface.y, z: surface.z - inset };
 
   if (!side) {
-    side = radialU ?? { x: 1, y: 0, z: 0 };
+    side = { x: 1, y: 0, z: 0 };
   }
 
   return {
