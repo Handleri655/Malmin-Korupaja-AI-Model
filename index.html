@@ -49,7 +49,7 @@
 
         <div id="chrome">
           <div id="picker" class="row"></div>
-          <button type="button" id="tune-toggle">Säädä leveyttä, sormea ja kokoa</button>
+          <button type="button" id="tune-toggle">Säädä leveyttä ja sormea</button>
           <div class="panel" id="tune-panel" hidden>
             <div class="row-label">
               <span>Leveys</span>
@@ -63,8 +63,13 @@
             </div>
             <div id="fingers" class="chips"></div>
 
+            <div class="row-label">
+              <span>Tunnistettu koko</span>
+              <span id="size-value">–</span>
+            </div>
+            <p class="size-hint">Sormus skaalautuu sormen paksuuden mukaan automaattisesti.</p>
             <div class="size-row">
-              <span>Koko</span>
+              <span>Hienosäätö</span>
               <button type="button" id="size-down" aria-label="Pienennä sormusta">−</button>
               <input id="size" type="range" min="75" max="135" value="100" />
               <button type="button" id="size-up" aria-label="Suurenna sormusta">+</button>
@@ -101,8 +106,8 @@
       <p class="eyebrow">Malmin Korupaja</p>
       <h1>Volcano</h1>
       <p class="lede">
-        Avaa kamera ja näytä kätesi. Sormus asettuu sormeesi reaaliajassa — aluksi
-        koko Volcano-mallisto.
+        Avaa kamera ja näytä kätesi. Sormus asettuu sormeesi ja skaalautuu
+        sormen koon mukaan — aluksi koko Volcano-mallisto.
       </p>
       <button type="button" id="start-cam">Avaa kamera</button>
       <button type="button" class="ghost" id="start-demo">Kokeile esimerkkikädellä</button>

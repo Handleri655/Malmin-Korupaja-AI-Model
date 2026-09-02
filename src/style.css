@@ -276,6 +276,15 @@ button {
   margin-top: 0.65rem;
 }
 
+.size-hint {
+  margin: -0.1rem 0 0.15rem;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--muted);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .chips {
   display: flex;
   gap: 0.4rem;

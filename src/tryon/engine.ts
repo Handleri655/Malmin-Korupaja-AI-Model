@@ -33,6 +33,8 @@ export class TryOnEngine {
   private lostFrames = 0;
   private sourceWidth = 1280;
   private sourceHeight = 720;
+  private smoothedRadius = 0;
+  private detectedMm = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.domElement = canvas;
@@ -97,6 +99,12 @@ export class TryOnEngine {
   setFinger(finger: FingerId): void {
     this.finger = finger;
     this.hasPose = false;
+    this.smoothedRadius = 0;
+    this.detectedMm = 0;
+  }
+
+  getDetectedSizeMm(): number | null {
+    return this.detectedMm > 0 ? this.detectedMm : null;
   }
 
   setSizeAdjust(value: number): void {
@@ -146,7 +154,11 @@ export class TryOnEngine {
     if (!pose) {
       this.lostFrames += 1;
       this.opacity = Math.max(0, this.opacity - 0.18);
-      if (this.lostFrames > 10) this.hasPose = false;
+      if (this.lostFrames > 10) {
+        this.hasPose = false;
+        this.smoothedRadius = 0;
+        this.detectedMm = 0;
+      }
       this.group.visible = this.opacity > 0.04;
       this.syncOpacity();
       this.renderer.render(this.scene, this.camera);
@@ -157,7 +169,14 @@ export class TryOnEngine {
     TARGET_POS.set(pose.x, pose.y, pose.z);
     TARGET_DIR.set(pose.dirX, pose.dirY, pose.dirZ).normalize();
     TARGET_QUAT.setFromUnitVectors(UP, TARGET_DIR);
-    const scale = pose.radiusPx * 1.04 * this.sizeAdjust;
+    if (!this.hasPose || this.smoothedRadius < 1) {
+      this.smoothedRadius = pose.radiusPx;
+      this.detectedMm = pose.innerDiameterMm;
+    } else {
+      this.smoothedRadius += (pose.radiusPx - this.smoothedRadius) * 0.16;
+      this.detectedMm += (pose.innerDiameterMm - this.detectedMm) * 0.1;
+    }
+    const scale = this.smoothedRadius * 1.02 * this.sizeAdjust;
 
     if (!this.hasPose) {
       this.group.position.copy(TARGET_POS);
@@ -168,7 +187,7 @@ export class TryOnEngine {
       this.group.position.lerp(TARGET_POS, 0.36);
       this.group.quaternion.slerp(TARGET_QUAT, 0.3);
       TMP_SCALE.set(scale, scale, scale);
-      this.group.scale.lerp(TMP_SCALE, 0.2);
+      this.group.scale.lerp(TMP_SCALE, 0.28);
     }
 
     this.opacity = Math.min(1, this.opacity + 0.22);

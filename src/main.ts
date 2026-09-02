@@ -14,6 +14,7 @@ import {
   stopCamera,
 } from './tryon/camera.ts';
 import { TryOnEngine } from './tryon/engine.ts';
+import { formatRingSizeMm } from './tryon/hand.ts';
 import { HandTracker } from './tryon/tracker.ts';
 
 const $ = <T extends HTMLElement>(id: string): T => {
@@ -34,6 +35,7 @@ const widthsEl = $('widths');
 const fingersEl = $('fingers');
 const widthValue = $('width-value');
 const fingerValue = $('finger-value');
+const sizeValue = $('size-value');
 const shopLink = $<HTMLAnchorElement>('shop-link');
 const productMeta = $('product-meta');
 const sizeInput = $<HTMLInputElement>('size');
@@ -221,7 +223,14 @@ const loop = (): void => {
 
   const showHint = !found && performance.now() > hintUntil;
   hint.classList.toggle('show', showHint);
+  const detectedMm = engine.getDetectedSizeMm();
+  if (detectedMm) {
+    sizeValue.textContent = `${formatRingSizeMm(detectedMm)} mm`;
+  } else if (!found) {
+    sizeValue.textContent = '–';
+  }
   if (recording) setStatus('Nauhoitus');
+  else if (found && detectedMm) setStatus(`Koko ${formatRingSizeMm(detectedMm)} mm`);
   else if (found) setStatus('Sormus paikallaan');
   else setStatus(source === 'camera' ? 'Etsitään kättä' : 'Kättä ei löytynyt');
 };
@@ -476,7 +485,7 @@ $('tune-toggle').addEventListener('click', () => {
   const panel = $('tune-panel');
   panel.hidden = !panel.hidden;
   $('tune-toggle').textContent = panel.hidden
-    ? 'Säädä leveyttä, sormea ja kokoa'
+    ? 'Säädä leveyttä ja sormea'
     : 'Piilota säädöt';
 });
 
