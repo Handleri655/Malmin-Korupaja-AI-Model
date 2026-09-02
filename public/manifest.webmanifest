@@ -1,0 +1,16 @@
+{
+  "name": "Volcano · Malmin Korupaja",
+  "short_name": "Volcano",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#11110f",
+  "theme_color": "#11110f",
+  "lang": "fi",
+  "icons": [
+    {
+      "src": "/brand/icon.jpg",
+      "sizes": "1080x1080",
+      "type": "image/jpeg"
+    }
+  ]
+}

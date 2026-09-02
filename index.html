@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="fi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no"
+    />
+    <meta name="theme-color" content="#11110f" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Volcano" />
+    <meta
+      name="description"
+      content="Kokeile Malmin Korupajan Volcano-sormusta omassa kädessäsi. Kamera asettaa sormuksen sormeesi reaaliajassa."
+    />
+    <link rel="icon" href="/brand/icon.jpg" />
+    <link rel="apple-touch-icon" href="/brand/icon.jpg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Outfit:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <title>Volcano · kokeile sormusta</title>
+  </head>
+  <body>
+    <div id="shell">
+      <div id="stage-wrap">
+        <div id="stage">
+          <video id="camera" playsinline webkit-playsinline autoplay muted></video>
+          <img id="still" alt="Valittu kuva" hidden />
+          <canvas id="overlay"></canvas>
+          <div id="hint">Näytä kätesi kameralle</div>
+          <div id="flash"></div>
+        </div>
+
+        <header id="topbar">
+          <div class="brand">
+            <img src="/brand/icon.jpg" alt="" />
+            <div>
+              <p>Malmin Korupaja</p>
+              <strong>Volcano</strong>
+            </div>
+          </div>
+          <p id="status">Valmis</p>
+        </header>
+
+        <div id="chrome">
+          <div id="picker" class="row"></div>
+          <button type="button" id="tune-toggle">Säädä leveyttä, sormea ja kokoa</button>
+          <div class="panel" id="tune-panel" hidden>
+            <div class="row-label">
+              <span>Leveys</span>
+              <span id="width-value">5 mm</span>
+            </div>
+            <div id="widths" class="chips"></div>
+
+            <div class="row-label">
+              <span>Sormi</span>
+              <span id="finger-value">Nimetön</span>
+            </div>
+            <div id="fingers" class="chips"></div>
+
+            <div class="size-row">
+              <span>Koko</span>
+              <button type="button" id="size-down" aria-label="Pienennä sormusta">−</button>
+              <input id="size" type="range" min="75" max="135" value="100" />
+              <button type="button" id="size-up" aria-label="Suurenna sormusta">+</button>
+            </div>
+          </div>
+
+          <div id="shutter-row">
+            <button type="button" id="flip" class="icon-btn" aria-label="Vaihda kamera">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                <path d="M21 3v5h-5" />
+                <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                <path d="M8 16H3v5" />
+              </svg>
+            </button>
+            <button type="button" id="shutter" aria-label="Ota kuva"></button>
+            <button type="button" id="record" class="icon-btn" aria-label="Nauhoita video">
+              <span class="rec-dot"></span>
+            </button>
+          </div>
+
+          <div class="product-line">
+            <a id="shop-link" href="https://www.korupaja.fi/volcano.html" target="_blank" rel="noreferrer">
+              Tilaa tämä sormus
+            </a>
+            <p id="product-meta">Hopea · 290 €</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section id="gate">
+      <img class="mark" src="/brand/icon.jpg" alt="Malmin Korupaja" />
+      <p class="eyebrow">Malmin Korupaja</p>
+      <h1>Volcano</h1>
+      <p class="lede">
+        Avaa kamera ja näytä kätesi. Sormus asettuu sormeesi reaaliajassa — aluksi
+        koko Volcano-mallisto.
+      </p>
+      <button type="button" id="start-cam">Avaa kamera</button>
+      <button type="button" class="ghost" id="start-demo">Kokeile esimerkkikädellä</button>
+      <label class="ghost" for="file-input">Tai valitse oma kuva</label>
+      <input id="file-input" type="file" accept="image/*" hidden />
+      <div id="gate-strip"></div>
+      <p class="fineprint">
+        Paras kokemus puhelimella. Salli kameran käyttö, kun selain kysyy.
+      </p>
+    </section>
+
+    <div id="loader" hidden>
+      <div class="spinner"></div>
+      <p>Ladataan kokeilua…</p>
+    </div>
+
+    <div id="preview" hidden>
+      <img id="preview-image" alt="Otettu kuva" />
+      <video id="preview-video" controls playsinline></video>
+      <div class="preview-actions">
+        <button type="button" id="share-media">Jaa</button>
+        <button type="button" id="save-media">Tallenna</button>
+        <button type="button" class="ghost" id="close-preview">Sulje</button>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
